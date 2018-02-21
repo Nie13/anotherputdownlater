@@ -17,9 +17,11 @@ import org.snmp4j.TransportMapping;
 import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.smi.Address;
+import org.snmp4j.smi.Integer32;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.UdpAddress;
+import org.snmp4j.smi.Variable;
 import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
@@ -31,15 +33,17 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "mSNMP";
     private static final String commun = "public";
     private static final int SNMP_VERSION = SnmpConstants.version2c;
-    private static String ipAddress = "127.0.0.1";
+    private static String ipAddress = "192.168.1.211";
     private static final String port = "161";
-    private static final String OIDVALUE = "1.3.6..1.2.1.1.5.0";
+    private static final String OIDVALUE = "1.3.6.1.2.1.1.4.0";
 
 
     private Button msend;
     private EditText mconsel;
     private ProgressBar mSpinner;
     private StringBuffer mlog = new StringBuffer();
+    private EditText mtext;
+    private Button msave;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
         msend = (Button) findViewById(R.id.sendBtn);
         mconsel = (EditText) findViewById(R.id.console);
         mSpinner = (ProgressBar) findViewById(R.id.progressBar);
+        mtext = (EditText) findViewById(R.id.saveText);
+        msave = (Button) findViewById(R.id.saveBtn);
         //click listener for send
 
         msend.setOnClickListener(new View.OnClickListener() {
@@ -59,58 +65,90 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        msave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                nAsyncTsk.execute();
+            }
+        });
+
     }
 
     //sneding snmp request
     private void sendRequest(String comand) throws Exception {
         TransportMapping<UdpAddress> transpt = new DefaultUdpTransportMapping();
         transpt.listen();
-
         mlog.append("CREATING CONNECTION");
         CommunityTarget comtgt = new CommunityTarget();
         comtgt.setCommunity(new OctetString(commun));
-
         comtgt.setVersion(SNMP_VERSION);
-
         mlog.append("ADDRESS: " + ipAddress + ":" + port + "\n");
-
         comtgt.setAddress(new UdpAddress(ipAddress + "/" + port));
-
         comtgt.setRetries(2);
-
         comtgt.setTimeout(1000);
-
         mlog.append("PREPARING PDU \n");
-
         PDU pdu = new PDU();
-
         pdu.add(new VariableBinding(new OID(comand)));
-
-        pdu.setType(PDU.GETNEXT);
-
+        pdu.setType(PDU.GET);
         Snmp snmp = new Snmp(transpt);
-
         mlog.append("SNEDING REQUEST... DI DU DI \n");
-
         ResponseEvent rspns = snmp.send(pdu, comtgt);
-
         if(rspns != null){
             PDU rspnsPDU = rspns.getResponse();
-
             Address pAddrs = rspns.getPeerAddress();
-
             if(rspnsPDU != null){
                 int errStat = rspnsPDU.getErrorStatus();
                 int errIndx = rspnsPDU.getErrorIndex();
                 String errStatTxt = rspnsPDU.getErrorStatusText();
-
                 if(errStat == PDU.noError){
                     mlog.append("SNMP RESPONSE: " + rspnsPDU.getVariableBindings() + "\n");
                 }else{
                     mlog.append("FAIL REQUEST WITH ERROR STATUTE: " + errStat + " AND WITH ERROR INDEX: " + errIndx + "\n ERROR STATUS TEXT: " + errStatTxt + "\n");
-
                 }
+            }else {
+                mlog.append("ERROR: NULL PDU \n");
+            }
+        }else{
+            mlog.append("AGENT TIME OUT, TRY AGAIN");
+        }
+        snmp.close();
+    }
 
+    private void setRequest(String oidcmd) throws Exception{
+        TransportMapping<UdpAddress> transpt = new DefaultUdpTransportMapping();
+        transpt.listen();
+        mlog.append("CREATING CONNECTION");
+        CommunityTarget comtgt = new CommunityTarget();
+        comtgt.setCommunity(new OctetString(commun));
+        comtgt.setVersion(SNMP_VERSION);
+        mlog.append("ADDRESS: " + ipAddress + ":" + port + "\n");
+        comtgt.setAddress(new UdpAddress(ipAddress + "/" + port));
+        comtgt.setRetries(2);
+        comtgt.setTimeout(1000);
+        mlog.append("PREPARING PDU \n");
+        PDU pdu = new PDU();
+        OID moid = new OID(oidcmd);
+        Variable mvar = new OctetString(mtext.getText().toString());
+        VariableBinding mvarBind = new VariableBinding(moid, mvar);
+        pdu.add(mvarBind);
+        pdu.setType(PDU.SET);
+        pdu.setRequestID(new Integer32(1));
+        //pdu.setType(PDU.GETNEXT);
+        Snmp snmp = new Snmp(transpt);
+        mlog.append("SET REQUEST SENDING OUT... DI DU DI \n");
+        ResponseEvent rspns = snmp.set(pdu, comtgt);
+        if(rspns != null){
+            PDU rspnsPDU = rspns.getResponse();
+            //Address pAddrs = rspns.getPeerAddress();
+            if(rspnsPDU != null){
+                int errStat = rspnsPDU.getErrorStatus();
+                int errIndx = rspnsPDU.getErrorIndex();
+                String errStatTxt = rspnsPDU.getErrorStatusText();
+                if(errStat == PDU.noError){
+                    mlog.append("SNMP RESPONSE: " + rspnsPDU.getVariableBindings() + "\n");
+                }else{
+                    mlog.append("FAIL REQUEST WITH ERROR STATUTE: " + errStat + " AND WITH ERROR INDEX: " + errIndx + "\n ERROR STATUS TEXT: " + errStatTxt + "\n");
+                }
             }else {
                 mlog.append("ERROR: NULL PDU \n");
             }
@@ -131,6 +169,29 @@ public class MainActivity extends AppCompatActivity {
                 sendRequest(OIDVALUE);
             }catch (Exception e){
                 Log.d(TAG, "ERROR sending snmp request: " + e.getMessage());
+                mlog.append(e.getMessage());
+            }
+            return null;
+        }
+
+        protected void onPostExecute(Void result){
+            //mconsel.setText("");
+            mconsel.append("\n" + mlog);
+            mSpinner.setVisibility(View.GONE);
+        };
+    };
+
+    AsyncTask<Void, Void, Void> nAsyncTsk = new AsyncTask<Void, Void, Void>() {
+        protected void onPreExecute(){
+            mSpinner.setVisibility(View.VISIBLE);
+        };
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+                setRequest(OIDVALUE);
+            }catch (Exception e){
+                Log.d(TAG, "ERROR setting snmp request: " + e.getMessage());
                 mlog.append(e.getMessage());
             }
             return null;
