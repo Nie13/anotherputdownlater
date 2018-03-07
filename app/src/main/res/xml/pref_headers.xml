@@ -1,0 +1,19 @@
+<preference-headers xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <header
+        android:fragment="com.hrns.l.snmp_client_test.SettingsActivity$GeneralPreferenceFragment"
+        android:title="@string/pref_header_general" />
+    <!--android:icon="@drawable/ic_info_black_24dp"-->
+
+    <header
+        android:fragment="com.hrns.l.snmp_client_test.SettingsActivity$ServerPreferenceFragment"
+        android:title="@string/pref_header_server_connection" />
+    <!-- android:icon="@drawable/ic_sync_black_24dp"-->
+
+    <header
+        android:fragment="com.hrns.l.snmp_client_test.SettingsActivity$SNMPConfigurationPreferenceFragment"
+        android:title="@string/pref_header_snmp_connection" />
+    <!--android:icon="@drawable/ic_notifications_black_24dp"-->
+
+
+</preference-headers>

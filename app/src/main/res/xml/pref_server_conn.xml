@@ -1,0 +1,21 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <EditTextPreference
+        android:key="pref_key_connection_address"
+
+        android:summary="@string/pref_summary_server_ip_address"
+        android:title="@string/pref_title_server_ip_address"
+        android:defaultValue="@string/pref_summary_server_ip_address"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <EditTextPreference
+        android:key="pref_key_connection_port"
+
+        android:summary="@string/pref_summary_server_port"
+        android:title="@string/pref_title_server_port"
+        android:defaultValue="@string/pref_summary_server_port"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</PreferenceScreen>

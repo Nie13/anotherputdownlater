@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "mSNMP";
     private static final String commun = "public";
     private static final int SNMP_VERSION = SnmpConstants.version2c;
-    private static String ipAddress = "192.168.1.211";
+    private static String ipAddress = "172.16.31.130";
     private static final String port = "161";
     private static final String OIDVALUE = "1.3.6.1.2.1.1.4.0";
 
