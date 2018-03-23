@@ -28,10 +28,7 @@
             android:choiceMode="singleChoice"
             android:listSelector="@drawable/ic_launcher_foreground"
             android:paddingTop="90dp"
-            android:childDivider="#00000000">
-            <!--android:LayoutDirection="rtl"-->
-
-        </ExpandableListView>
+            android:childDivider="#00000000" />
 
     </android.support.design.widget.NavigationView>
 
