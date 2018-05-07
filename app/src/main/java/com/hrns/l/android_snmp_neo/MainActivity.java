@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
+import android.widget.TextView;
 
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.Snmp;
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String[] wPlanetTitles;
     private DrawerLayout wDrawerLayout;
+    private TextView wTextContent;
     //private ListView wDrawerList;
 
     @Override
@@ -45,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
 
         wDrawerLayout = (DrawerLayout) findViewById(R.id.wdrawer_layout);
         wPlanetTitles = getResources().getStringArray(R.array.table_list);
+        wTextContent = (TextView) findViewById(R.id.contentText);
         //wDrawerList = (ListView) findViewById(R.id.wlistview);
 
         Toolbar wtoolbar = findViewById(R.id.wtoolBar);
@@ -68,20 +71,29 @@ public class MainActivity extends AppCompatActivity {
                 witem.setChecked(true);
                 wDrawerLayout.closeDrawers();
                 if(id == R.id.nav_system){
+                    StringBuilder terminalResult = new StringBuilder();
                     try{
                         Map<String, String> result = doWalk(".1.3.6.1.2.1.1", target);
+
+                        if(result == null){
+                            terminalResult.append("\n RESULT IS NULL");
+                        }
                         for(Map.Entry<String, String> entry : result.entrySet()){
                             if(entry.getKey().startsWith(".1.3.6.1.2.1.1.1.")){
-                                System.out.println("sysDescr" + entry.getKey().replace(".1.3.6.1.2.1.1.1.0", "") + ": " + entry.getValue());
-                                Log.i("", "sysDescr " + entry.getKey().replace(".1.3.6.1.2.1.1.1.0", "") + ": " + entry.getValue());
+                                //System.out.println("sysDescr" + entry.getKey().replace(".1.3.6.1.2.1.1.1.0", "") + ": " + entry.getValue());
+                                //Log.i("", "sysDescr " + entry.getKey().replace(".1.3.6.1.2.1.1.1.0", "") + ": " + entry.getValue());
+                                terminalResult.append("\n sysDescr " + entry.getKey() + ": " + entry.getValue());
                             }
                             if(entry.getKey().startsWith(".1.3.6.1.2.1.1.2.")){
-                                System.out.println("sysObjectID" + entry.getKey().replace(".1.3.6.1.2.1.1.2.0", "") + ": " + entry.getValue());
+                                //System.out.println("sysObjectID" + entry.getKey().replace(".1.3.6.1.2.1.1.2.0", "") + ": " + entry.getValue());
+                                terminalResult.append("\n sysObjectID " + entry.getKey() + entry.getValue());
                             }
                         }
                     }catch (Exception e){
                         Log.e("", "HAVING ERRORS");
+                        terminalResult.append("\n" + e.getMessage() + e.getStackTrace() + e.getCause());
                     }
+                    wTextContent.append(terminalResult.toString());
 
                 }
                 return true;
@@ -108,7 +120,8 @@ public class MainActivity extends AppCompatActivity {
         TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
         List <TreeEvent> events = treeUtils.getSubtree(target, new OID(tableOid));
         if(events == null || events.size() == 0){
-            System.out.println("Error: Unable to read table,,,");
+            //System.out.println("Error: Unable to read table,,,");
+            Log.e("", "Error: Unable to read table,,,");
             return result;
         }
 
@@ -117,7 +130,8 @@ public class MainActivity extends AppCompatActivity {
                 continue;
             }
             if(event.isError()){
-                System.out.println("ERROR: table OID [" + tableOid + "]" + event.getErrorMessage());
+                //System.out.println("ERROR: table OID [" + tableOid + "]" + event.getErrorMessage());
+                Log.i("", "ERROR: table OID: " + tableOid + "] " + event.getErrorMessage());
                 continue;
             }
             VariableBinding[] varBindings = event.getVariableBindings();

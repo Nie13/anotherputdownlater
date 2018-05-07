@@ -18,6 +18,20 @@
             android:id="@+id/wtoolBar"
             android:background="#4b4bdd"
             android:theme="@style/ThemeOverlay.AppCompat.ActionBar"/>
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="80dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:id="@+id/contentText"
+                android:text="LOADING..."/>
+
+        </LinearLayout>
 
     </FrameLayout>
 
