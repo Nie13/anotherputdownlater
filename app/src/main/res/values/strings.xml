@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">android_snmp_neo</string>
+    <string name="snav_system">System</string>
+    <string name="snav_ip">IP</string>
+    <string-array name="table_list">
+        <item>system</item>
+        <item>ip</item>
+    </string-array>
+</resources>
