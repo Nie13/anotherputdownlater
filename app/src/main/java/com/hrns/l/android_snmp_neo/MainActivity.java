@@ -13,13 +13,18 @@ import android.view.MenuItem;
 import android.widget.TextView;
 
 import org.snmp4j.CommunityTarget;
+import org.snmp4j.PDU;
+import org.snmp4j.ScopedPDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
+import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.smi.Address;
 import org.snmp4j.smi.GenericAddress;
+import org.snmp4j.smi.Integer32;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
+import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.snmp4j.util.DefaultPDUFactory;
@@ -58,7 +63,8 @@ public class MainActivity extends AppCompatActivity {
 
         final CommunityTarget target = new CommunityTarget();
         target.setCommunity(new OctetString("public"));
-        target.setAddress(GenericAddress.parse("udp:172.16.25.132/161"));
+        //target.setAddress(GenericAddress.parse("udp:172.16.25.132/161"));
+        target.setAddress(new UdpAddress("172.16.25.132/161"));
         target.setRetries(2);
         target.setTimeout(1500);
         target.setVersion(SnmpConstants.version2c);
@@ -71,13 +77,22 @@ public class MainActivity extends AppCompatActivity {
                 witem.setChecked(true);
                 wDrawerLayout.closeDrawers();
                 if(id == R.id.nav_system){
-                    StringBuilder terminalResult = new StringBuilder();
-                    try{
-                        Map<String, String> result = doWalk(".1.3.6.1.2.1.1", target);
 
+                    try{
+                        PDU response = snmpGet(target);
+                        wTextContent.append(response.getVariableBindings().toString());
+                    }catch (Exception e){
+                        wTextContent.append("\n ERROR DUDE" + e.getMessage());
+                    }
+                    /*StringBuilder terminalResult = new StringBuilder();
+                    try{
+                        terminalResult.append("STEP 0");
+                        Map<String, String> result = doWalk(".1.3.6.1.2.1.1", target);
+                        terminalResult.append("STEP 1");
                         if(result == null){
                             terminalResult.append("\n RESULT IS NULL");
                         }
+                        terminalResult.append("STEP 2");
                         for(Map.Entry<String, String> entry : result.entrySet()){
                             if(entry.getKey().startsWith(".1.3.6.1.2.1.1.1.")){
                                 //System.out.println("sysDescr" + entry.getKey().replace(".1.3.6.1.2.1.1.1.0", "") + ": " + entry.getValue());
@@ -93,8 +108,15 @@ public class MainActivity extends AppCompatActivity {
                         Log.e("", "HAVING ERRORS");
                         terminalResult.append("\n" + e.getMessage() + e.getStackTrace() + e.getCause());
                     }
-                    wTextContent.append(terminalResult.toString());
+                    wTextContent.append(terminalResult.toString());*/
 
+                } else if( id == R.id.nav_ip){
+                    try{
+                       String newresult = snmpresult(target);
+                       wTextContent.append(newresult);
+                    }catch (Exception e){
+                        wTextContent.append("\n" + e.getMessage() + "FUCKED");
+                    }
                 }
                 return true;
             }
@@ -149,6 +171,50 @@ public class MainActivity extends AppCompatActivity {
         }
         snmp.close();
         return result;
+    }
+
+    public static String snmpresult(Target wtarget) throws IOException{
+        String result;
+        TransportMapping transportMapping = new DefaultUdpTransportMapping();
+        transportMapping.listen();
+
+        PDU pdu = new PDU();
+        pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.4.0")));
+        pdu.setType(PDU.GET);
+        pdu.setRequestID(new Integer32(1));
+
+        Snmp snmp = new Snmp(transportMapping);
+        ResponseEvent responseEvent = snmp.get(pdu, wtarget);
+
+        if(responseEvent != null){
+            PDU responsePDU = responseEvent.getResponse();
+            if (responsePDU != null ){
+                if(responsePDU.getErrorStatus() == PDU.noError){
+                    result = responsePDU.getVariableBindings().toString();
+                }else{
+                    result = "PDU ERROR";
+                }
+            }else{
+                result = "responsePDU null";
+            }
+        }else{
+            result = "response event null";
+        }
+        snmp.close();
+        return result;
+    }
+
+    public static PDU snmpGet(Target wtarget) throws IOException{
+        ScopedPDU pdu = new ScopedPDU();
+        pdu.setType(PDU.GET);
+        pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.4.0")));
+        Snmp snmp = new Snmp();
+
+        ResponseEvent responseEvent = snmp.send(pdu, wtarget);
+        PDU response =  responseEvent.getResponse();
+
+        return response;
+
     }
 
 }
