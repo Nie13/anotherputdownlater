@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         final CommunityTarget target = new CommunityTarget();
         target.setCommunity(new OctetString("public"));
         //target.setAddress(GenericAddress.parse("udp:172.16.28.198/161"));
-        target.setAddress(new UdpAddress("172.16.28.198/161"));
+        target.setAddress(new UdpAddress("172.16.31.255/161"));
         target.setRetries(2);
         target.setTimeout(1500);
         target.setVersion(SnmpConstants.version2c);
@@ -79,8 +79,38 @@ public class MainActivity extends AppCompatActivity {
                 if(id == R.id.nav_system){
 
                     try{
-                        PDU response = snmpGet(target);
-                        wTextContent.append(response.getVariableBindings().toString());
+
+                        TransportMapping trans = new DefaultUdpTransportMapping();
+                        trans.listen();
+
+                        wTextContent.append("\n try part start,,,,,");
+                        //PDU response = snmpGet();
+
+                        PDU pdu = new PDU();
+                        pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.3.0")));
+                        pdu.setRequestID(new Integer32(1));
+                        pdu.setType(PDU.GETNEXT);
+
+                        wTextContent.append("\n try 2nd part start,,,,,");
+
+                        Snmp snmp = new Snmp(trans);
+
+                        wTextContent.append("\n try 2.2nd part start,,,,,");
+
+                        ResponseEvent response = snmp.getNext(pdu, target);
+
+                        wTextContent.append("\n try 3rd part start,,,,,");
+
+                        if(response == null){
+                            wTextContent.append("\n NOTHING");
+                        }else{
+                            PDU responsePDU = response.getResponse();
+                            wTextContent.append("\n" + responsePDU.getVariableBindings().toString());
+                        }
+
+                        snmp.close();
+                    }catch (IOException e){
+                        wTextContent.append("\n IO exception" + e.getMessage());
                     }catch (Exception e){
                         wTextContent.append("\n ERROR DUDE" + e.getMessage());
                     }
@@ -204,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
         return result;
     }
 
-    public static PDU snmpGet(Target wtarget) throws IOException{
+    public static PDU snmpGet(){
         /*ScopedPDU pdu = new ScopedPDU();
         pdu.setType(PDU.GET);
         pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.4.0")));
@@ -214,35 +244,49 @@ public class MainActivity extends AppCompatActivity {
         PDU response =  responseEvent.getResponse();
 
         return response;*/
+        try{
+            TransportMapping trans = new DefaultUdpTransportMapping();
+            trans.listen();
 
-        TransportMapping trans = new DefaultUdpTransportMapping();
-        trans.listen();
+            CommunityTarget wtarget = new CommunityTarget();
+            wtarget.setCommunity(new OctetString("public"));
+            //target.setAddress(GenericAddress.parse("udp:172.16.28.198/161"));
+            wtarget.setAddress(new UdpAddress("172.16.28.198/161"));
+            wtarget.setRetries(2);
+            wtarget.setTimeout(1500);
+            wtarget.setVersion(SnmpConstants.version2c);
 
-        PDU pdu = new PDU();
-        pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.3.0")));
-        pdu.setRequestID(new Integer32(1));
-        pdu.setType(PDU.GETNEXT);
 
-        Snmp snmp = new Snmp(trans);
+            PDU pdu = new PDU();
+            pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.3.0")));
+            pdu.setRequestID(new Integer32(1));
+            pdu.setType(PDU.GETNEXT);
 
-        ResponseEvent response = snmp.getNext(pdu, wtarget);
+            Snmp snmp = new Snmp(trans);
 
-        if(response != null){
-            PDU responsePDU = response.getResponse();
+            ResponseEvent response = snmp.getNext(pdu, wtarget);
 
-            if(responsePDU != null){
-                String errorText = responsePDU.getErrorStatusText();
-                int errorStatus = responsePDU.getErrorStatus();
+            if(response != null){
+                PDU responsePDU = response.getResponse();
+                snmp.close();
 
-                if(errorStatus == PDU.noError){
-                    return responsePDU;
+                if(responsePDU != null){
+                    String errorText = responsePDU.getErrorStatusText();
+                    int errorStatus = responsePDU.getErrorStatus();
+
+                    if(errorStatus == PDU.noError){
+                        return responsePDU;
+                    }else{
+                        return responsePDU;
+                    }
                 }else{
-                    return responsePDU;
+                    return null;
                 }
             }else{
                 return null;
             }
-        }else{
+
+        }catch (IOException e){
             return null;
         }
 
