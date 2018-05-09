@@ -63,8 +63,8 @@ public class MainActivity extends AppCompatActivity {
 
         final CommunityTarget target = new CommunityTarget();
         target.setCommunity(new OctetString("public"));
-        //target.setAddress(GenericAddress.parse("udp:172.16.25.132/161"));
-        target.setAddress(new UdpAddress("172.16.25.132/161"));
+        //target.setAddress(GenericAddress.parse("udp:172.16.28.198/161"));
+        target.setAddress(new UdpAddress("172.16.28.198/161"));
         target.setRetries(2);
         target.setTimeout(1500);
         target.setVersion(SnmpConstants.version2c);
@@ -179,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
         transportMapping.listen();
 
         PDU pdu = new PDU();
-        pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.4.0")));
+        pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.3.0")));
         pdu.setType(PDU.GET);
         pdu.setRequestID(new Integer32(1));
 
@@ -205,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static PDU snmpGet(Target wtarget) throws IOException{
-        ScopedPDU pdu = new ScopedPDU();
+        /*ScopedPDU pdu = new ScopedPDU();
         pdu.setType(PDU.GET);
         pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.4.0")));
         Snmp snmp = new Snmp();
@@ -213,7 +213,38 @@ public class MainActivity extends AppCompatActivity {
         ResponseEvent responseEvent = snmp.send(pdu, wtarget);
         PDU response =  responseEvent.getResponse();
 
-        return response;
+        return response;*/
+
+        TransportMapping trans = new DefaultUdpTransportMapping();
+        trans.listen();
+
+        PDU pdu = new PDU();
+        pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.3.0")));
+        pdu.setRequestID(new Integer32(1));
+        pdu.setType(PDU.GETNEXT);
+
+        Snmp snmp = new Snmp(trans);
+
+        ResponseEvent response = snmp.getNext(pdu, wtarget);
+
+        if(response != null){
+            PDU responsePDU = response.getResponse();
+
+            if(responsePDU != null){
+                String errorText = responsePDU.getErrorStatusText();
+                int errorStatus = responsePDU.getErrorStatus();
+
+                if(errorStatus == PDU.noError){
+                    return responsePDU;
+                }else{
+                    return responsePDU;
+                }
+            }else{
+                return null;
+            }
+        }else{
+            return null;
+        }
 
     }
 
