@@ -1,6 +1,9 @@
 package com.hrns.l.android_snmp_neo;
 
+import android.graphics.Color;
+import android.icu.text.UnicodeSetSpanner;
 import android.os.Bundle;
+import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -9,8 +12,15 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.AdapterView;
+import android.widget.Toast;
 
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
@@ -43,7 +53,8 @@ public class MainActivity extends AppCompatActivity {
     private String[] wPlanetTitles;
     private DrawerLayout wDrawerLayout;
     private TextView wTextContent;
-    //private ListView wDrawerList;
+    private ListView wTitleList;
+    private ListView wContentList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
         wPlanetTitles = getResources().getStringArray(R.array.table_list);
         wTextContent = (TextView) findViewById(R.id.contentText);
         //wDrawerList = (ListView) findViewById(R.id.wlistview);
+        wContentList = (ListView)findViewById(R.id.wcontent);
+        wTitleList = (ListView)findViewById(R.id.wtitle);
 
         Toolbar wtoolbar = findViewById(R.id.wtoolBar);
         setSupportActionBar(wtoolbar);
@@ -64,10 +77,13 @@ public class MainActivity extends AppCompatActivity {
         final CommunityTarget target = new CommunityTarget();
         target.setCommunity(new OctetString("public"));
         //target.setAddress(GenericAddress.parse("udp:172.16.28.198/161"));
-        target.setAddress(new UdpAddress("172.16.31.255/161"));
+        target.setAddress(new UdpAddress("172.16.28.198/161"));
         target.setRetries(2);
         target.setTimeout(1500);
         target.setVersion(SnmpConstants.version2c);
+
+        String[] prev = getResources().getStringArray(R.array.prev);
+        wTitleList.setAdapter(new ArrayAdapter(MainActivity.this,  R.layout.list_content_item , prev ));
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
@@ -76,44 +92,62 @@ public class MainActivity extends AppCompatActivity {
                 int id = witem.getItemId();
                 witem.setChecked(true);
                 wDrawerLayout.closeDrawers();
-                if(id == R.id.nav_system){
-
+                if(id == R.id.nav_system && target.getAddress().toString().equals(getResources().getString(R.string.generic_add)) ){
+                    String[] titles = getResources().getStringArray(R.array.title_system_arr);
+                    String[] Contents = getResources().getStringArray(R.array.system_arr);
+                    wTitleList.setAdapter(new ArrayAdapter(MainActivity.this, R.layout.list_content_item, titles));
+                    wContentList.setAdapter(new ArrayAdapter(MainActivity.this, R.layout.list_content_item, Contents));
                     try{
-
                         TransportMapping trans = new DefaultUdpTransportMapping();
                         trans.listen();
-
                         wTextContent.append("\n try part start,,,,,");
                         //PDU response = snmpGet();
-
                         PDU pdu = new PDU();
                         pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.3.0")));
                         pdu.setRequestID(new Integer32(1));
                         pdu.setType(PDU.GETNEXT);
-
                         wTextContent.append("\n try 2nd part start,,,,,");
-
                         Snmp snmp = new Snmp(trans);
-
                         wTextContent.append("\n try 2.2nd part start,,,,,");
-
                         ResponseEvent response = snmp.getNext(pdu, target);
-
                         wTextContent.append("\n try 3rd part start,,,,,");
-
                         if(response == null){
                             wTextContent.append("\n NOTHING");
                         }else{
                             PDU responsePDU = response.getResponse();
                             wTextContent.append("\n" + responsePDU.getVariableBindings().toString());
                         }
-
                         snmp.close();
                     }catch (IOException e){
                         wTextContent.append("\n IO exception" + e.getMessage());
                     }catch (Exception e){
                         wTextContent.append("\n ERROR DUDE" + e.getMessage());
                     }
+
+                    int totalH = 0;
+                    int desireW = View.MeasureSpec.makeMeasureSpec(wContentList.getWidth(), View.MeasureSpec.AT_MOST);
+                    int BB = 0;
+                    for(int i = 0; i<wContentList.getAdapter().getCount(); i++){
+                        View itemB = wContentList.getAdapter().getView(i, null, wContentList);
+                        itemB.measure(desireW, View.MeasureSpec.UNSPECIFIED);
+                        totalH += itemB.getMeasuredHeight();
+                        String s = wContentList.getItemAtPosition(i).toString();
+                        if(s.equals("")){
+                          itemB.setBackgroundColor(Color.YELLOW);
+                          BB ++;
+                            //wContentList.getChildAt(i).setBackgroundColor(Color.YELLOW);
+
+
+                        }
+                    }
+                    ViewGroup.LayoutParams params = wTitleList.getLayoutParams();
+                    params.height = totalH + (wTitleList.getDividerHeight() * (wTitleList.getAdapter().getCount() -1));
+                    wTitleList.setLayoutParams(params);
+                    wTitleList.requestLayout();
+
+                    wContentList.setLayoutParams(params);
+                    wContentList.requestLayout();
+                    Toast.makeText(MainActivity.this, "Total " + BB + " times of null appeared", Toast.LENGTH_LONG).show();
                     /*StringBuilder terminalResult = new StringBuilder();
                     try{
                         terminalResult.append("STEP 0");
@@ -140,13 +174,32 @@ public class MainActivity extends AppCompatActivity {
                     }
                     wTextContent.append(terminalResult.toString());*/
 
-                } else if( id == R.id.nav_ip){
+                } else if( id == R.id.nav_ip && target.getAddress().toString().equals(getResources().getString(R.string.generic_add))){
+                    String[] titles = getResources().getStringArray(R.array.ip_title_arr);
+                    String[] Contents = getResources().getStringArray(R.array.ip_arr);
+                    wTitleList.setAdapter(new ArrayAdapter(MainActivity.this, R.layout.list_content_item, titles));
+                    wContentList.setAdapter(new ArrayAdapter(MainActivity.this, R.layout.list_content_item, Contents));
                     try{
                        String newresult = snmpresult(target);
                        wTextContent.append(newresult);
                     }catch (Exception e){
                         wTextContent.append("\n" + e.getMessage() + "FUCKED");
                     }
+                    int totalH = 0;
+                    int desireW = View.MeasureSpec.makeMeasureSpec(wTitleList.getWidth(), View.MeasureSpec.AT_MOST);
+                    for(int i = 0; i<wTitleList.getAdapter().getCount(); i++){
+                        View itemB = wTitleList.getAdapter().getView(i, null, wTitleList);
+                        itemB.measure(desireW, View.MeasureSpec.UNSPECIFIED);
+                        totalH += itemB.getMeasuredHeight();
+                    }
+                    ViewGroup.LayoutParams params = wTitleList.getLayoutParams();
+                    params.height = totalH + (wTitleList.getDividerHeight() * (wTitleList.getAdapter().getCount() -1));
+                    wTitleList.setLayoutParams(params);
+                    wTitleList.requestLayout();
+
+                    wContentList.setLayoutParams(params);
+                    wContentList.requestLayout();
+
                 }
                 return true;
             }
@@ -172,7 +225,6 @@ public class MainActivity extends AppCompatActivity {
         TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
         List <TreeEvent> events = treeUtils.getSubtree(target, new OID(tableOid));
         if(events == null || events.size() == 0){
-            //System.out.println("Error: Unable to read table,,,");
             Log.e("", "Error: Unable to read table,,,");
             return result;
         }
@@ -182,7 +234,6 @@ public class MainActivity extends AppCompatActivity {
                 continue;
             }
             if(event.isError()){
-                //System.out.println("ERROR: table OID [" + tableOid + "]" + event.getErrorMessage());
                 Log.i("", "ERROR: table OID: " + tableOid + "] " + event.getErrorMessage());
                 continue;
             }

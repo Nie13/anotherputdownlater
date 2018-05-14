@@ -2,14 +2,18 @@
     <string name="app_name">android_snmp_neo</string>
     <string name="snav_system">System</string>
     <string name="snav_ip">IP</string>
+    <string name="generic_add">172.16.28.198/161</string>
     <string-array name="table_list">
         <item>system</item>
         <item>ip</item>
     </string-array>
+    <string-array name="prev">
+        <item>LOADING,,, </item>
+    </string-array>
     <string-array name="system_arr">
         <item> </item>
         <item>1.3.6.1.4.1.311.1.1.3.1.1</item>
-        <item>5/7/2018 10:38:04</item>
+        <item>5/7/2018 10:38:05</item>
         <item>ello</item>
         <item>l-THINK</item>
         <item> </item>
